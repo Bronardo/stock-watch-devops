@@ -1,5 +1,5 @@
 # Stock-Watch: Real-Time Financial Microservice
-### 7.3HD DevOps Pipeline | SIT753 Professional Practice in IT
+### DevOps Pipeline
 
 ## 1. Project Description
 **Stock-Watch** is a high-performance Node.js microservice designed to fetch and present real-time financial market data. Leveraging the **Finnhub.io REST API**, the application allows users to query current stock prices, daily highs, and lows for any global ticker symbol. 
