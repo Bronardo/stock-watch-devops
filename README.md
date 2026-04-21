@@ -30,7 +30,7 @@ To achieve a **Top HD** grade, this pipeline implements all seven stages of the 
 
 ## 4. Setup Instructions
 1. **Clone the repository:**
-   `git clone https://github.com/YOUR_USERNAME/stock-watch-devops.git`
+   `git clone https://github.com/Bronardo/stock-watch-devops.git`
 2. **Environment Variables:**
    Copy `.env.example` to `.env` and add your `FINNHUB_KEY`.
 3. **Local Run:**
