@@ -82,7 +82,13 @@ pipeline {
                     if (response != 0) {
                         error "Deployment Failed: App unreachable at ${healthUrl}"
                     } else {
-                        echo "Health Check Success: ${healthUrl} is UP!"
+                        echo "--------------------------------------------------------"
+                        echo "🚀 DEPLOYMENT SUCCESSFUL!"
+                        echo "Environment: ${env.K8S_NAMESPACE.toUpperCase()}"
+                        echo "Access Link: ${baseUrl}"
+                        echo "Health Check: ${healthUrl}"
+                        echo "Live Prices: ${baseUrl}/price/AAPL"
+                        echo "--------------------------------------------------------"
                     }
                 }
             }
