@@ -75,19 +75,22 @@ pipeline {
                     // Wait for rollout in the specific namespace
                     sh "kubectl rollout status deployment/stock-watch-api -n ${env.K8S_NAMESPACE} --timeout=60s"
                     
-                    // Health check against the correct environment port
-                    def healthUrl = "http://${K8S_NODE_IP}:${env.NODE_PORT}/health"
-                    def response = sh(script: "curl -s ${healthUrl}", returnStatus: true)
+                    // Set environment variables for the banner
+                    env.BASE_URL = "http://${env.K8S_NODE_IP}:${env.NODE_PORT}"
+                    env.HEALTH_URL = "${env.BASE_URL}/health"
+                    
+                    // Run the health check
+                    def response = sh(script: "curl -s ${env.HEALTH_URL}", returnStatus: true)
                     
                     if (response != 0) {
-                        error "Deployment Failed: App unreachable at ${healthUrl}"
+                        error "Deployment Failed: App unreachable at ${env.HEALTH_URL}"
                     } else {
                         echo "--------------------------------------------------------"
                         echo "🚀 DEPLOYMENT SUCCESSFUL!"
                         echo "Environment: ${env.K8S_NAMESPACE.toUpperCase()}"
-                        echo "Access Link: ${baseUrl}"
-                        echo "Health Check: ${healthUrl}"
-                        echo "Live Prices: ${baseUrl}/price/AAPL"
+                        echo "Access Link: ${env.BASE_URL}"
+                        echo "Health Check: ${env.HEALTH_URL}"
+                        echo "Live Prices: ${env.BASE_URL}/price/AAPL"
                         echo "--------------------------------------------------------"
                     }
                 }
