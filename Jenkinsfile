@@ -49,26 +49,40 @@ pipeline {
 
         stage('6. Deploy') {
             steps {
-                echo "Deploying ${DOCKER_IMAGE} to K8s Staging..."
-                // envsubst injects the DOCKER_IMAGE variable into your YAML
-                sh "envsubst < k8s/deployment.yaml | kubectl apply -n staging -f -"
+                script {
+                    // HD Logic: Determine environment settings based on branch
+                    if (env.BRANCH_NAME == 'main') {
+                        env.K8S_NAMESPACE = 'production'
+                        env.NODE_PORT     = '32000'
+                    } else {
+                        env.K8S_NAMESPACE = 'staging'
+                        env.NODE_PORT     = '32001'
+                    }
+
+                    echo "Deploying to ${env.K8S_NAMESPACE} on port ${env.NODE_PORT}..."
+                    
+                    // envsubst now handles both DOCKER_IMAGE and NODE_PORT
+                    sh "envsubst < k8s/deployment.yaml | kubectl apply -n ${env.K8S_NAMESPACE} -f -"
+                }
             }
         }
 
         stage('7. Monitoring') {
             steps {
-                echo 'Verifying Deployment Health...'
-                // Wait for the rollout to complete so health check doesn't fail prematurely
-                sh "kubectl rollout status deployment/stock-watch-api -n staging --timeout=60s"
-                
-                // Real health check against the NodePort (32000)
                 script {
-                    def response = sh(script: "curl -s http://${K8S_NODE_IP}:32000/health", returnStatus: true)
+                    echo "Verifying ${env.K8S_NAMESPACE} Deployment Health..."
+                    
+                    // Wait for rollout in the specific namespace
+                    sh "kubectl rollout status deployment/stock-watch-api -n ${env.K8S_NAMESPACE} --timeout=60s"
+                    
+                    // Health check against the correct environment port
+                    def healthUrl = "http://${K8S_NODE_IP}:${env.NODE_PORT}/health"
+                    def response = sh(script: "curl -s ${healthUrl}", returnStatus: true)
+                    
                     if (response != 0) {
-                        echo "Alert: App Unreachable at http://${K8S_NODE_IP}:32000/health"
-                        // For Top HD, you could use 'error' here to fail the build if health check fails
+                        error "Deployment Failed: App unreachable at ${healthUrl}"
                     } else {
-                        echo "Health Check Success!"
+                        echo "Health Check Success: ${healthUrl} is UP!"
                     }
                 }
             }
