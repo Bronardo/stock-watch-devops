@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: stock-watch-api
+  # namespace: staging  <-- We'll let Jenkins set this via 'kubectl apply -n'
 spec:
   replicas: 2
   selector:
@@ -13,6 +14,7 @@ spec:
         app: stock-watch
     spec:
       containers:
+      # --- The Node.js App ---
       - name: stock-watch-container
         image: ${DOCKER_IMAGE}
         ports:
@@ -23,6 +25,21 @@ spec:
             secretKeyRef:
               name: stock-api-secret
               key: finnhub-key
+        - name: MONGO_URI
+          value: "mongodb://localhost:27017/stockwatch"
+        # Health checks (Required for Stage 7 Monitoring)
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 15
+
+      # --- The MongoDB Instance (Sidecar) ---
+      - name: mongodb
+        image: mongo:latest
+        ports:
+        - containerPort: 27017
 ---
 apiVersion: v1
 kind: Service
