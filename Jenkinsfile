@@ -119,6 +119,8 @@ pipeline {
                     echo "Environment: ${env.K8S_NAMESPACE.toUpperCase()}"
                     echo "Database Status: Connected ✅"
                     echo "Access Link: ${env.BASE_URL}"
+                    echo "Health Check: ${env.HEALTH_URL}"
+                    echo "Live Prices: ${env.BASE_URL}/price/AAPL"
                     echo "--------------------------------------------------------"
                 }
             }
