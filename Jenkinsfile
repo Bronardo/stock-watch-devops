@@ -7,7 +7,9 @@ pipeline {
         IMAGE_NAME       = 'stock-watch-api'
         FINNHUB_KEY      = credentials('finnhub-api-key')
         // Create the combined image string for envsubst
-        DOCKER_IMAGE     = "${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
+        CLEAN_BRANCH     = "${env.BRANCH_NAME.replaceAll("/", "-")}"
+        IMAGE_TAG        = "${CLEAN_BRANCH}-${env.BUILD_NUMBER}"
+        DOCKER_IMAGE     = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
         // Set the K8s IP for the Monitoring stage
         K8S_NODE_IP      = '10.10.10.10'
     }
@@ -41,7 +43,8 @@ pipeline {
 
         stage('5. Package') {
             steps {
-                sh "docker build --no-cache -t ${DOCKER_IMAGE} ."
+                sh "docker build -t ${DOCKER_IMAGE} ."
+                // sh "docker build --no-cache -t ${DOCKER_IMAGE} ."
                 sh "echo ${DOCKER_HUB_CREDS_PSW} | docker login -u ${DOCKER_HUB_CREDS_USR} --password-stdin"
                 sh "docker push ${DOCKER_IMAGE}"
             }
