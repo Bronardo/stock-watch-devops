@@ -145,21 +145,54 @@ pipeline {
     
     post {
         always {
-            echo "Pipeline finished. Cleaning up workspace..."
-            // cleanWs()
+            echo "Pipeline execution finished. Cleaning up workspace..."
+            cleanWs()
         }
+        
         success {
-            echo "✅ Alert: Build #${env.BUILD_NUMBER} passed successfully!"
+            script {
+                def successBody = """
+                    <div style="font-family: Arial, sans-serif; border: 1px solid #d4edda; padding: 20px; background-color: #f8f9fa;">
+                        <h2 style="color: #28a745;">✅ Pipeline Success: Build #${env.BUILD_NUMBER}</h2>
+                        <p><b>Project:</b> ${env.JOB_NAME}</p>
+                        <p><b>Branch:</b> ${env.BRANCH_NAME}</p>
+                        <p><b>Status:</b> All Stages Completed Successfully</p>
+                        <p><b>Deployment:</b> Production is Live 🚀</p>
+                        <p><a href="${env.BUILD_URL}" style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">View Build Details</a></p>
+                    </div>
+                """
+                
+                emailext (
+                    subject: "✅ SUCCESS: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                    body: successBody,
+                    to: 'skyer8192@gmail.com',
+                    replyTo: 'skyer8192@gmail.com',
+                    mimeType: 'text/html'
+                )
+            }
         }
+
         failure {
-            // This is Requirement 10: Automatic Alerting
-            echo "🚨 ALERT: Pipeline Failed at Stage: ${env.STAGE_NAME}"
-            echo "Check logs at: ${env.BUILD_URL}"
-            
-            /* Technical Insight for Report: 
-            In a production environment, this block would trigger 
-            an email, Slack, or PagerDuty notification.
-            */
+            script {
+                def failureBody = """
+                    <div style="font-family: Arial, sans-serif; border: 1px solid #f8d7da; padding: 20px; background-color: #f8f9fa;">
+                        <h2 style="color: #dc3545;">🚨 Pipeline Failure: Build #${env.BUILD_NUMBER}</h2>
+                        <p><b>Project:</b> ${env.JOB_NAME}</p>
+                        <p><b>Branch:</b> ${env.BRANCH_NAME}</p>
+                        <p><b>Status:</b> CRITICAL FAILURE ❌</p>
+                        <p><b>Issue:</b> Check Stage 8 Monitoring or Build Logs for details.</p>
+                        <p><a href="${env.BUILD_URL}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;">Debug Build Now</a></p>
+                    </div>
+                """
+                
+                emailext (
+                    subject: "❌ FAILED: ${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]",
+                    body: failureBody,
+                    to: 'skyer8192@gmail.com',
+                    replyTo: 'skyer8192@gmail.com',
+                    mimeType: 'text/html'
+                )
+            }
         }
     }
 }
