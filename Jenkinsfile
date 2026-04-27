@@ -105,26 +105,38 @@ pipeline {
                     env.BASE_URL = "http://${env.K8S_NODE_IP}:${env.NODE_PORT}"
                     env.HEALTH_URL = "${env.BASE_URL}/health"
                     
-                    // 2. Fetch Live Metrics (JSON) instead of just the status code
-                    // We use returnStdout: true to read the actual 'database: Connected' message
-                    def responseBody = sh(script: "curl -s ${env.HEALTH_URL}", returnStdout: true).trim()
-                    echo "Live Telemetry: ${responseBody}"
-                    
-                    // 3. Meaningful Alert Rule: Check if Database is UP
-                    // This satisfies the "Meaningful alert rules" requirement
-                    if (responseBody.contains('"database":"Disconnected"') || responseBody == "") {
-                        error "🚨 ALERT: Critical Failure! Database is Disconnected or App is Down."
+                    // We use a timeout wrapper for the entire polling process
+                    timeout(time: 2, unit: 'MINUTES') {
+                        waitUntil {
+                            try {
+                                // 2. Fetch Live Metrics (JSON)
+                                def responseBody = sh(script: "curl -s -H 'Cache-Control: no-cache' ${env.HEALTH_URL}", returnStdout: true).trim()
+                                echo "Current Telemetry: ${responseBody}"
+                                
+                                // 3. Check if Database is UP
+                                if (responseBody.contains('"database":"Connected"')) {
+                                    // 4. Success Banner with Live Metric Snippet
+                                    echo "--------------------------------------------------------"
+                                    echo "🚀 MONITORING INTEGRATED & SUCCESSFUL!"
+                                    echo "Environment: ${env.K8S_NAMESPACE.toUpperCase()}"
+                                    echo "Database Status: Connected ✅"
+                                    echo "Access Link: ${env.BASE_URL}"
+                                    echo "Health Check: ${env.HEALTH_URL}"
+                                    echo "Live Telemetry: ${responseBody}"
+                                    echo "--------------------------------------------------------"
+                                    return true // This exits the waitUntil loop successfully
+                                } else {
+                                    echo "⚠️ Database still Disconnected... retrying in 10s"
+                                    sleep 10
+                                    return false // This triggers a retry
+                                }
+                            } catch (Exception e) {
+                                echo "⚠️ Application not responding yet... retrying in 10s"
+                                sleep 10
+                                return false
+                            }
+                        }
                     }
-                    
-                    // 4. Success Banner with Live Metric Snippet
-                    echo "--------------------------------------------------------"
-                    echo "🚀 MONITORING INTEGRATED & SUCCESSFUL!"
-                    echo "Environment: ${env.K8S_NAMESPACE.toUpperCase()}"
-                    echo "Database Status: Connected ✅"
-                    echo "Access Link: ${env.BASE_URL}"
-                    echo "Health Check: ${env.HEALTH_URL}"
-                    echo "Live Prices: ${env.BASE_URL}/price/AAPL"
-                    echo "--------------------------------------------------------"
                 }
             }
         }
