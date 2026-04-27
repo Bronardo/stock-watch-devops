@@ -41,7 +41,7 @@ pipeline {
 
         stage('5. Package') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE} ."
+                sh "docker build --no-cache -t ${DOCKER_IMAGE} ."
                 sh "echo ${DOCKER_HUB_CREDS_PSW} | docker login -u ${DOCKER_HUB_CREDS_USR} --password-stdin"
                 sh "docker push ${DOCKER_IMAGE}"
             }
