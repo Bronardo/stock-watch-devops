@@ -81,7 +81,10 @@ pipeline {
                                      passwordVariable: 'GIT_PASSWORD', 
                                      usernameVariable: 'GIT_USERNAME')]) {
                         
-                        sh "git tag -a ${tag} -m 'Release ${tag} promoted to production'"
+                        sh "git config user.email '${GIT_USERNAME}@users.noreply.github.com'"
+                        sh "git config user.name 'Jenkins Release Bot'"
+                        
+                        sh "git tag -a ${tag} -m 'Release ${tag} promoted to production by Jenkins'"
                         sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Bronardo/stock-watch-devops.git ${tag}"
                     }
                 }
