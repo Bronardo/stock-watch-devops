@@ -130,8 +130,8 @@ pipeline {
     
     post {
         always {
-            echo "Pipeline finished. Cleaning up workspace..."
-            cleanWs()
+            // echo "Pipeline finished. Cleaning up workspace..."
+            // cleanWs()
         }
         success {
             echo "✅ Alert: Build #${env.BUILD_NUMBER} passed successfully!"
