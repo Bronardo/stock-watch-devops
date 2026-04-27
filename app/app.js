@@ -8,7 +8,13 @@ app.use(express.json());
 
 app.get('/health', (req, res) => {
     const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
-    res.status(200).json({ status: 'UP', database: dbStatus });
+    res.status(200).json({ 
+        status: 'UP', 
+        database: dbStatus,
+        uptime: Math.floor(process.uptime()) + "s",
+        memoryUsage: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + "MB",
+        timestamp: new Date().toISOString()
+    });
 });
 
 app.get('/price/:ticker', async (req, res) => {

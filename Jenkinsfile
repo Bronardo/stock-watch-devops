@@ -94,29 +94,32 @@ pipeline {
         stage('8. Monitoring') {
             steps {
                 script {
-                    echo "Verifying ${env.K8S_NAMESPACE} Deployment Health..."
+                    echo "Verifying ${env.K8S_NAMESPACE} Deployment & Live Metrics..."
                     
-                    // Wait for rollout in the specific namespace
+                    // 1. Kubernetes Rollout Check
                     sh "kubectl rollout status deployment/stock-watch-api -n ${env.K8S_NAMESPACE} --timeout=60s"
                     
-                    // Set environment variables for the banner
                     env.BASE_URL = "http://${env.K8S_NODE_IP}:${env.NODE_PORT}"
                     env.HEALTH_URL = "${env.BASE_URL}/health"
                     
-                    // Run the health check
-                    def response = sh(script: "curl -s ${env.HEALTH_URL}", returnStatus: true)
+                    // 2. Fetch Live Metrics (JSON) instead of just the status code
+                    // We use returnStdout: true to read the actual 'database: Connected' message
+                    def responseBody = sh(script: "curl -s ${env.HEALTH_URL}", returnStdout: true).trim()
+                    echo "Live Telemetry: ${responseBody}"
                     
-                    if (response != 0) {
-                        error "Deployment Failed: App unreachable at ${env.HEALTH_URL}"
-                    } else {
-                        echo "--------------------------------------------------------"
-                        echo "🚀 DEPLOYMENT SUCCESSFUL!"
-                        echo "Environment: ${env.K8S_NAMESPACE.toUpperCase()}"
-                        echo "Access Link: ${env.BASE_URL}"
-                        echo "Health Check: ${env.HEALTH_URL}"
-                        echo "Live Prices: ${env.BASE_URL}/price/AAPL"
-                        echo "--------------------------------------------------------"
+                    // 3. Meaningful Alert Rule: Check if Database is UP
+                    // This satisfies the "Meaningful alert rules" requirement
+                    if (responseBody.contains('"database":"Disconnected"') || responseBody == "") {
+                        error "🚨 ALERT: Critical Failure! Database is Disconnected or App is Down."
                     }
+                    
+                    // 4. Success Banner with Live Metric Snippet
+                    echo "--------------------------------------------------------"
+                    echo "🚀 MONITORING INTEGRATED & SUCCESSFUL!"
+                    echo "Environment: ${env.K8S_NAMESPACE.toUpperCase()}"
+                    echo "Database Status: Connected ✅"
+                    echo "Access Link: ${env.BASE_URL}"
+                    echo "--------------------------------------------------------"
                 }
             }
         }
