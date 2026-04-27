@@ -47,27 +47,48 @@ pipeline {
             }
         }
 
-        stage('6. Deploy') {
+        stage('6. Deploy to Staging') {
+            when { branch 'staging' } // Only runs on the staging branch
             steps {
                 script {
-                    // HD Logic: Determine environment settings based on branch
-                    if (env.BRANCH_NAME == 'main') {
-                        env.K8S_NAMESPACE = 'production'
-                        env.NODE_PORT     = '32000'
-                    } else {
-                        env.K8S_NAMESPACE = 'staging'
-                        env.NODE_PORT     = '32001'
-                    }
-
-                    echo "Deploying to ${env.K8S_NAMESPACE} on port ${env.NODE_PORT}..."
-                    
-                    // envsubst now handles both DOCKER_IMAGE and NODE_PORT
+                    env.K8S_NAMESPACE = 'staging'
+                    env.NODE_PORT     = '32001'
+                    echo "Deploying to Staging..."
                     sh "envsubst < k8s/deployment.yaml | kubectl apply -n ${env.K8S_NAMESPACE} -f -"
                 }
             }
         }
 
-        stage('7. Monitoring') {
+        stage('7. Release Promotion') {
+            when { branch 'main' } // Only runs when code is merged to main
+            steps {
+                script {
+                    // 1. Manual Approval Gate (Requirement 9)
+                    input message: "Promote build ${env.BUILD_NUMBER} to Production?", ok: "Release v1.0.${env.BUILD_NUMBER}"
+                    
+                    // 2. Set Production Environment
+                    env.K8S_NAMESPACE = 'production'
+                    env.NODE_PORT     = '32000'
+                    
+                    echo "Promoting to Production Namespace..."
+                    sh "envsubst < k8s/deployment.yaml | kubectl apply -n ${env.K8S_NAMESPACE} -f -"
+
+                    // 3. Automated Git Tagging (Release Management)
+                    def tag = "v1.0.${env.BUILD_NUMBER}"
+                    echo "Tagging Release: ${tag}"
+                    
+                    withCredentials([usernamePassword(credentialsId: 'github-leo-token', 
+                                     passwordVariable: 'GIT_PASSWORD', 
+                                     usernameVariable: 'GIT_USERNAME')]) {
+                        
+                        sh "git tag -a ${tag} -m 'Release ${tag} promoted to production'"
+                        sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Bronardo/stock-watch-devops.git ${tag}"
+                    }
+                }
+            }
+        }
+
+        stage('8. Monitoring') {
             steps {
                 script {
                     echo "Verifying ${env.K8S_NAMESPACE} Deployment Health..."
@@ -95,6 +116,27 @@ pipeline {
                     }
                 }
             }
+        }
+
+    }
+    
+    post {
+        always {
+            echo "Pipeline finished. Cleaning up workspace..."
+            cleanWs()
+        }
+        success {
+            echo "✅ Alert: Build #${env.BUILD_NUMBER} passed successfully!"
+        }
+        failure {
+            // This is Requirement 10: Automatic Alerting
+            echo "🚨 ALERT: Pipeline Failed at Stage: ${env.STAGE_NAME}"
+            echo "Check logs at: ${env.BUILD_URL}"
+            
+            /* Technical Insight for Report: 
+            In a production environment, this block would trigger 
+            an email, Slack, or PagerDuty notification.
+            */
         }
     }
 }
