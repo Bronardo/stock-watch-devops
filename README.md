@@ -46,6 +46,7 @@ The pipeline is designed with a **"Shift-Left"** philosophy, ensuring security a
     *   `docker-hub-creds`: Docker Hub Username/Password.
     *   `finnhub-api-key`: Finnhub Stock API Secret.
     *   `github-leo-token`: GitHub PAT for automated tagging.
+    *   `k8s-node-ip-secret`: k8s node ip address.
 3.  Create a **Multibranch Pipeline** job pointing to this repository.
 4.  Run the pipeline to initiate the first build.
 
