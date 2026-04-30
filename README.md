@@ -1,37 +1,50 @@
-# Stock-Watch: Real-Time Financial Microservice
-### DevOps Pipeline
+# Stock Watcher API - DevOps Pipeline
 
-## 1. Project Description
-**Stock-Watch** is a high-performance Node.js microservice designed to fetch and present real-time financial market data. Leveraging the **Finnhub.io REST API**, the application allows users to query current stock prices, daily highs, and lows for any global ticker symbol. 
+A containerized Node.js microservice orchestrated with an 8-stage Jenkins declarative pipeline, deploying to a Kubernetes (K8s) cluster.
 
-The project is built specifically to demonstrate a **production-grade CI/CD lifecycle** using Jenkins. It transitions from local development to a containerized Kubernetes deployment, integrating automated gates for code health, security vulnerabilities, and operational monitoring.
+## 🚀 System Architecture
+*   **App Stack:** Node.js, Express, MongoDB.
+*   **Infrastructure:** Docker, Kubernetes (Dual-namespace: Staging/Production).
+*   **CI/CD:** Jenkins (Groovy DSL).
+*   **Security & Quality:** Snyk, Mocha, Supertest, npm audit.
 
-## 2. Technical Stack
-* **Runtime:** Node.js (v20+)
-* **Framework:** Express.js
-* **Communication:** Axios (REST API Integration)
-* **Testing:** Mocha & Chai (Unit & Integration Testing)
-* **Containerization:** Docker & Docker Compose
-* **Orchestration:** Kubernetes (k3s)
-* **CI/CD:** Jenkins (Pipeline-as-Code)
+---
 
-## 3. Pipeline Stages (7 Stages Implemented)
-To achieve a **Top HD** grade, this pipeline implements all seven stages of the DevOps lifecycle with full automation:
+## 🛠 CI/CD Pipeline Stages
 
-| # | Stage | Tools Used | Description |
-|---|---|---|---|
-| 1 | **Build** | Docker | Generates a multi-stage production Docker image. |
-| 2 | **Test** | Mocha / Chai | Executes unit tests for API routing and data parsing. |
-| 3 | **Code Quality** | SonarQube | Scans for code smells, duplication, and complexity. |
-| 4 | **Security** | Snyk / Trivy | Scans dependencies and container layers for CVEs. |
-| 5 | **Deploy** | Docker Compose | Deploys the image to a staging/test environment. |
-| 6 | **Release** | Git Tags / Docker Hub | Versions the artifact and promotes it to the registry. |
-| 7 | **Monitoring** | Prometheus / Alertmanager | Monitors endpoint health and simulates rate-limit alerts. |
+The pipeline is designed with a **"Shift-Left"** philosophy, ensuring security and quality are validated before any infrastructure is provisioned.
 
-## 4. Setup Instructions
-1. **Clone the repository:**
-   `git clone https://github.com/Bronardo/stock-watch-devops.git`
-2. **Environment Variables:**
-   Copy `.env.example` to `.env` and add your `FINNHUB_KEY`.
-3. **Local Run:**
-   `npm install && npm start`
+1.  **Build:** Resolves dependencies using `npm install` and primes the workspace.
+2.  **Test:** Executes integration tests using Mocha/Supertest to catch logic errors early.
+3.  **Code Quality:** Runs `npm audit` to verify dependency health and identify code smells.
+4.  **Security:** Scans for high-severity vulnerabilities using **Snyk CLI**.
+5.  **Package:** Builds an immutable Docker image with unique branch-build tagging and pushes to Docker Hub.
+6.  **Deploy to Staging:** Automated deployment to the `staging` namespace via `kubectl` for QA verification.
+7.  **Release Promotion:** A manual approval gate on the `main` branch that promotes the verified build to `production` and performs **Automated Git Tagging** (e.g., `v1.0.15`).
+8.  **Monitoring:** A resilience stage that polls the K8s `/health` endpoint to verify the MongoDB handshake and logs live telemetry.
+
+---
+
+## 📊 Observability & Monitoring
+*   **Cluster Visibility:** Integrated with **Headlamp** for real-time pod metrics, logs, and resource tracking.
+*   **Automated Alerting:** A global `post` block sends **Rich HTML Email Notifications** upon build success or failure, including live telemetry snippets.
+*   **Self-Healing Verification:** Uses `kubectl rollout status` to ensure deployments are fully functional before marking a build as successful.
+
+---
+
+## 🛠 Local Setup & Installation
+
+### Prerequisites
+*   Jenkins with Docker and Kubernetes CLI plugins installed.
+*   A running Kubernetes cluster (e.g., Minikube or MicroK8s).
+*   Snyk API Token and Docker Hub credentials configured in Jenkins.
+
+### Pipeline Configuration
+1.  Clone this repository.
+2.  Configure the following **Credentials** in Jenkins:
+    *   `docker-hub-creds`: Docker Hub Username/Password.
+    *   `finnhub-api-key`: Finnhub Stock API Secret.
+    *   `github-leo-token`: GitHub PAT for automated tagging.
+3.  Create a **Multibranch Pipeline** job pointing to this repository.
+4.  Run the pipeline to initiate the first build.
+
