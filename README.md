@@ -38,6 +38,7 @@ The pipeline is designed with a **"Shift-Left"** philosophy, ensuring security a
 *   Jenkins with Docker and Kubernetes CLI plugins installed.
 *   A running Kubernetes cluster (e.g., Minikube or MicroK8s).
 *   Snyk API Token and Docker Hub credentials configured in Jenkins.
+*   Finnhub Stock API
 
 ### Pipeline Configuration
 1.  Clone this repository.
