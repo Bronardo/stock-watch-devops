@@ -11,7 +11,7 @@ pipeline {
         IMAGE_TAG        = "${CLEAN_BRANCH}-${env.BUILD_NUMBER}"
         DOCKER_IMAGE     = "${DOCKER_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
         // Set the K8s IP for the Monitoring stage
-        K8S_NODE_IP      = '10.10.10.10'
+        K8S_NODE_IP      = credentials('k8s-node-ip-secret')
     }
 
     stages {
